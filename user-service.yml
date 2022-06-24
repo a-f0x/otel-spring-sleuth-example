@@ -1,0 +1,88 @@
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-api.html
+    disable-swagger-default-url: true
+
+logging:
+  config: classpath:logback-spring-dev.xml
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+
+spring:
+  application:
+    name: user-service
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:mydb
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+  sleuth:
+    otel:
+      config:
+        trace-id-ratio-based: ${TRACING_RATIO:1.0}
+      exporter:
+        otlp:
+          endpoint: ${OTEL_COLLECTOR:http://localhost:4317}
+    scheduled:
+      enabled: false
+    web:
+      skip-pattern: /api-docs.*|/swagger.*|.*\\.png|.*\\.css|.*\\.js|.*\\.html|/favicon.ico|/api/ignore_trace
+  main:
+    banner-mode: off
+
+  kafka:
+    bootstrap-servers: ${KAFKA:localhost:29092}
+    properties:
+      ssl:
+        truststore:
+          location:
+          password:
+      sasl:
+        mechanism: GSSAPI
+        jaas:
+          config:
+      security:
+        protocol: PLAINTEXT
+
+  cloud:
+    stream:
+      defaultBinder: kafka
+      kafka:
+        binder:
+          replicationFactor: 1
+          autoCreateTopics: true
+          requiredAcks: all
+          producerProperties:
+            retries: 3
+            key:
+              serializer: org.apache.kafka.common.serialization.StringSerializer
+      bindings:
+        userNotification:
+          destination: user-topic
+          binder: kafka
+
+random-service:
+  url: ${RANDOM_SERVICE_URL:http://localhost:7070}
+
+server:
+  port: ${USER_SERVICE_PORT:7071}
