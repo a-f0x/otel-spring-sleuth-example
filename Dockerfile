@@ -1,4 +1,4 @@
-FROM openjdk:11-slim-buster
+FROM eclipse-temurin:17-jdk AS build
 
 WORKDIR /app
 

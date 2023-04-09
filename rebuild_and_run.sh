@@ -1,0 +1,1 @@
+docker-compose build   random-service   user-service  && docker-compose up

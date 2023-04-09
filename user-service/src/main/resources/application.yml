@@ -6,7 +6,14 @@ springdoc:
     disable-swagger-default-url: true
 
 logging:
-  config: classpath:logback-spring-dev.xml
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+otel:
+  exporter:
+    otlp:
+      traces:
+        endpoint: ${OTEL_COLLECTOR:http://localhost:4317}
 
 management:
   endpoints:
@@ -18,27 +25,31 @@ management:
     health:
       enabled: true
   metrics:
-    export:
-      prometheus:
-        enabled: true
     distribution:
       percentiles-histogram:
         "[http.server.requests]": true
+  tracing:
+    sampling:
+      probability: ${TRACING_RATIO:1.0}
+
+
+
 
 spring:
+  profiles:
+    active:
+      - ${APPLICATION_PROFILE:dev}
   application:
-    name: random-service
-  sleuth:
-    otel:
-      config:
-        trace-id-ratio-based: ${TRACING_RATIO:1.0}
-      exporter:
-        otlp:
-          endpoint: ${OTEL_COLLECTOR:http://localhost:4317}
-    scheduled:
-      enabled: false
-    web:
-      skip-pattern: /api-docs.*|/swagger.*|.*\\.png|.*\\.css|.*\\.js|.*\\.html|/favicon.ico|/api/ignore_trace
+    name: user-service
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:mydb
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+
   main:
     banner-mode: off
 
@@ -57,8 +68,6 @@ spring:
         protocol: PLAINTEXT
 
   cloud:
-    function:
-      definition: onUserEvent;
     stream:
       defaultBinder: kafka
       kafka:
@@ -70,19 +79,24 @@ spring:
             retries: 3
             key:
               serializer: org.apache.kafka.common.serialization.StringSerializer
-        bindings:
-          onUserEvent-in-0:
-            consumer:
-              enable-dlq: true
-              dlq-name: user-topic-dlq
+          enable-observation: true
       bindings:
-        onUserEvent-in-0:
+        userNotification:
           destination: user-topic
-          group: tracing-group
           binder: kafka
-          consumer:
-            max-attempts: 3
 
+    openfeign:
+      client:
+        config:
+          random-service-client:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: basic
+
+
+
+random-service:
+  url: ${RANDOM_SERVICE_URL:http://localhost:7070}
 
 server:
-  port: ${RANDOM_SERVICE_PORT:7070}
+  port: ${USER_SERVICE_PORT:7071}

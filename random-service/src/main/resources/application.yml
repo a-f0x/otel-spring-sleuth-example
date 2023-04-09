@@ -6,7 +6,9 @@ springdoc:
     disable-swagger-default-url: true
 
 logging:
-  config: classpath:logback-spring-dev.xml
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
 
 management:
   endpoints:
@@ -18,37 +20,23 @@ management:
     health:
       enabled: true
   metrics:
-    export:
-      prometheus:
-        enabled: true
     distribution:
       percentiles-histogram:
         "[http.server.requests]": true
+  tracing:
+    sampling:
+      probability: ${TRACING_RATIO:1.0}
+#    propagation:
+#      type: b3
 
 spring:
   application:
-    name: user-service
-  h2:
-    console:
-      enabled: true
-  datasource:
-    url: jdbc:h2:mem:mydb
-    username: sa
-    password: password
-    driverClassName: org.h2.Driver
-  sleuth:
-    otel:
-      config:
-        trace-id-ratio-based: ${TRACING_RATIO:1.0}
-      exporter:
-        otlp:
-          endpoint: ${OTEL_COLLECTOR:http://localhost:4317}
-    scheduled:
-      enabled: false
-    web:
-      skip-pattern: /api-docs.*|/swagger.*|.*\\.png|.*\\.css|.*\\.js|.*\\.html|/favicon.ico|/api/ignore_trace
+    name: random-service
   main:
     banner-mode: off
+  profiles:
+    active:
+      - ${APPLICATION_PROFILE:dev}
 
   kafka:
     bootstrap-servers: ${KAFKA:localhost:29092}
@@ -65,6 +53,8 @@ spring:
         protocol: PLAINTEXT
 
   cloud:
+    function:
+      definition: onUserEvent;
     stream:
       defaultBinder: kafka
       kafka:
@@ -76,13 +66,20 @@ spring:
             retries: 3
             key:
               serializer: org.apache.kafka.common.serialization.StringSerializer
+          enable-observation: true
+        bindings:
+          onUserEvent-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-name: user-topic-dlq
       bindings:
-        userNotification:
+        onUserEvent-in-0:
           destination: user-topic
+          group: tracing-group
           binder: kafka
+          consumer:
+            max-attempts: 3
 
-random-service:
-  url: ${RANDOM_SERVICE_URL:http://localhost:7070}
 
 server:
-  port: ${USER_SERVICE_PORT:7071}
+  port: ${RANDOM_SERVICE_PORT:7070}

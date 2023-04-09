@@ -5,5 +5,5 @@ plugins {
 tasks.bootJar {
     enabled = true
     archiveFileName.set("app.jar")
-    mainClass.set("com.example.randomservice.RandomServiceApplication")
+    mainClass.set("com.example.randomservice.RandomServiceApplicationKt")
 }

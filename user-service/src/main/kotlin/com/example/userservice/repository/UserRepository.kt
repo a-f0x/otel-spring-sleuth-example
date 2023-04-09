@@ -1,9 +1,11 @@
 package com.example.userservice.repository
 
-import org.springframework.cloud.sleuth.annotation.NewSpan
+import io.micrometer.observation.annotation.Observed
 import org.springframework.data.repository.CrudRepository
 
 interface UserRepository : CrudRepository<UserEntity, Int> {
-    @NewSpan("repository layer")
+    @Observed(
+        contextualName = "repository layer"
+    )
     fun getAllByFirstName(firstName: String): List<UserEntity>
 }

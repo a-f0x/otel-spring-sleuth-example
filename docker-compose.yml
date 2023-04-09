@@ -1,6 +1,6 @@
 services:
   kafka:
-    image: quay.io/strimzi/kafka:latest-kafka-2.8.1-amd64
+    image: quay.io/strimzi/kafka:latest-kafka-3.4.0-amd64
     expose:
       - "9092"
     ports:
@@ -58,7 +58,8 @@ services:
       KAFKA: kafka:9092
       OTEL_COLLECTOR: http://otel-collector:4317
       TRACING_RATIO: 1.0
-    command: [ "sh","-c", "java -jar ./random-service/build/libs/app.jar --spring.config.location=./random-service.yml" ]
+      APPLICATION_PROFILE: ${APPLICATION_PROFILE}
+    command: [ "sh","-c", "java -jar ./random-service/build/libs/app.jar" ]
 
   user-service:
     #    profiles:
@@ -72,7 +73,8 @@ services:
       OTEL_COLLECTOR: http://otel-collector:4317
       TRACING_RATIO: 1.0
       RANDOM_SERVICE_URL: http://random-service:${RANDOM_SERVICE_PORT}
-    command: [ "sh","-c", "java -jar ./user-service/build/libs/app.jar --spring.config.location=./user-service.yml" ]
+      APPLICATION_PROFILE: ${APPLICATION_PROFILE}
+    command: [ "sh","-c", "java -jar ./user-service/build/libs/app.jar" ]
 
 
 
